@@ -44,7 +44,7 @@
 - Recargar variables:
 	source ~/.bashrc
 -----------------------------------
-2. CREAMOS UNA BD EN MYSQL
+3. CREAMOS UNA BD EN MYSQL
 -----------------------------------
 - En la terminal donde se instaló y configuró MySQL, accede a la consola de MySQL ejecutando el siguiente comando:
 	mysql -u airflow -p
@@ -72,7 +72,7 @@
 - Salimos de la consola:
 	exit;
 -----------------------------------
-3. CREAMOS LA CARPETA PIPELINE 
+4. CREAMOS LA CARPETA PIPELINE 
 -----------------------------------
 - En el escritorio creamos el directorio Datapath, cuya ruta y composición es: 
 	/home/jolv/Escritorio/Datapath
@@ -81,7 +81,7 @@
 		/Ejercicios_de_clase (se creo previamente en el blog de Kafka y Spark)
 		/Airflow (se creará durante la instalación de Apache Airflow)
 -----------------------------------
-3. INSTALAR Y CONFIGURAR LAS VARIABLES DE ENTORNO DE APACHE AIRFLOW
+5. INSTALAR Y CONFIGURAR LAS VARIABLES DE ENTORNO DE APACHE AIRFLOW
 -----------------------------------
 - En una terminal abierta desde el directorio Datapath, ejecutar los siguientes comandos:
 	sudo apt update
@@ -105,7 +105,7 @@
 - Recargar variables:
 	source ~/.bashrc
 -----------------------------------
-4. INICIAMOS LA BASE DE DATOS DE AIRFLOW
+6. INICIAMOS LA BASE DE DATOS DE AIRFLOW
 -----------------------------------
 - Iniciamos la bd:
 	airflow db init
@@ -125,18 +125,18 @@ para resetearla: airflow db reset
 listar usuarios: airflow users list
 eliminar usuarios: airflow users delete --username admin
 -----------------------------------
-4. MODIFICAMOS EL ARCHIVO DE CONFIGURACIÓN DE AIRFLOW
+7. MODIFICAMOS EL ARCHIVO DE CONFIGURACIÓN DE AIRFLOW
 -----------------------------------
 - En el directorio "/home/jolv/Escritorio/Datapath/Airflow", abrir el archivo airflow.cfg y realizar las siguientes modificaciones:
 	a) Para no mostrar los ejemplos, establecer load_examples = FALSE.
 	b) Para saber donde almacenar los DAG, buscar "dags_folder".
 -----------------------------------
-5. INSTALAR CONFLUENT-KAFKA EN EL DIRECTORIO DE AIRFLOW
+8. INSTALAR CONFLUENT-KAFKA EN EL DIRECTORIO DE AIRFLOW
 -----------------------------------
 - En un terminal abierto desde el directorio /Datapath/Airflow, ejecutar: 
 	pip install confluent-kafka
 -----------------------------------
-6. INICIAR EL ZOOKEEPER Y CLUSTER DE KAFKA
+9. INICIAR EL ZOOKEEPER Y CLUSTER DE KAFKA
 -----------------------------------
 - Iniciar Zookeeper
 
@@ -152,13 +152,13 @@ eliminar usuarios: airflow users delete --username admin
 
 	bin/zookeeper-shell.sh localhost:2181 ls /brokers/ids
 -----------------------------------
-7. CREAR UN TOPIC DE KAFKA AL QUE SE SUCRIBIRÁN NUESTRO CONSUMIDOR Y PRODUCTOR
+10. CREAR UN TOPIC DE KAFKA AL QUE SE SUCRIBIRÁN NUESTRO CONSUMIDOR Y PRODUCTOR
 -----------------------------------
 - Creamos un nuevo topic "airflow-kafka-spark". En caso reusemos un topic existente, se debe considerar que los datos a veces se escriben erróneamente en tópicos pasados y es aconsejable crear un nuevo topic cada vez que se levanta el cluster de Kafka.
 	
 	bin/kafka-topics.sh --create --topic airflow-kafka-spark --bootstrap-server localhost:9093 -- replication-factor 1 --	partitions 3
 -----------------------------------
-8. INICIAR EL CLUSTER DE SPARK
+11. INICIAR EL CLUSTER DE SPARK
 -----------------------------------
 - Abrimos una terminal desde la carpeta de spark-3.4.2-bin-hadoop3, y ejecutamos los siguientes comandos para iniciar un cluster de Spark con un nodo maestro y un nodo trabajador:
 	./sbin/start-master.sh
@@ -166,7 +166,7 @@ eliminar usuarios: airflow users delete --username admin
 
 	Para ubicar el <master-spark-url> abrimos en el navegador el localhost:9090 y copiamos la ruta de Spark Master at 	"spark://...". En el ejercicio, fue spark://dep23jolv:7077
 -----------------------------------
-9. INICIAR EL AIRFLOW SCHEDULER Y EL AIRFLOW WEBSERVER
+12. INICIAR EL AIRFLOW SCHEDULER Y EL AIRFLOW WEBSERVER
 -----------------------------------
 - Iniciamos el scheduler:
 	airflow scheduler
@@ -178,12 +178,12 @@ eliminar usuarios: airflow users delete --username admin
 	para acceder a la interfaz: 0.0.0.0:8080
 	para detenerlo: pkill -f "airflow webserver"
 -----------------------------------
-10. EJECUTAMOS EL ARCHIVO app.consumer.py EN UNA TERMINAL
+13. EJECUTAMOS EL ARCHIVO app.consumer.py EN UNA TERMINAL
 -----------------------------------
 - Abrimos una terminal desde el directorio /Datapath/Ejercicios_de_clase y ejecutamos el codigo de nuestro archivo app_comsumer.py: 
 	spark-submit app_consumer.py
 -----------------------------------
-11. CONFIGURAMOS LA API DE CLIMA DESDE EL ARCHIVO dag_2.py EN VISUAL STUDIO
+14. CONFIGURAMOS LA API DE CLIMA DESDE EL ARCHIVO dag_2.py EN VISUAL STUDIO
 -----------------------------------
 - La api es de https://openweathermap.org/api --> Current Weather Data - Api doc. En el script dag_2.py se hace el llamado a la API mediante la variable api_url:
 	https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={API key}
@@ -191,7 +191,7 @@ eliminar usuarios: airflow users delete --username admin
 	https://api.openweathermap.org/data/2.5/weather?lat=-12.04&lon=-77.02&appid=0665a8eaf0ce7b6a810d6811dd520025
 Las coordenadas corresponden a la ciudad de Lima. 
 -----------------------------------
-12. EJECUTAR EL ARCHIVO init_airflow_connections.sh 
+15. EJECUTAR EL ARCHIVO init_airflow_connections.sh 
 -----------------------------------
 - Copiar el archivo init_airflow_connections.sh a la carpeta Ejercicios_de_clase del directorio Datapath.
 
@@ -199,7 +199,7 @@ Las coordenadas corresponden a la ciudad de Lima.
 	sh init_airflow_connections.sh
 
 -----------------------------------
-13. MOVEMOS EL ARCHIVO dag_2.py EN LA CARPETA DAGS DE AIRFLOW Y LO EJECUTAMOS DESDE EL AIRFLOW WEBSERVER
+16. MOVEMOS EL ARCHIVO dag_2.py EN LA CARPETA DAGS DE AIRFLOW Y LO EJECUTAMOS DESDE EL AIRFLOW WEBSERVER
 -----------------------------------
 - Copiar el archivo dag_2.py a la carpeta dags dentro de Airflow.
 
@@ -213,7 +213,7 @@ Las coordenadas corresponden a la ciudad de Lima.
 
 - Al ingresar a nuestra consola de MySQL, seleccionamos la BD clima_data, y al ejecutar un SELECT * FROM weather_data observamos los datos añadidos por nuestro DAG.
 -----------------------------------
-13. DAR DE BAJA UN MICROSERVICIO DE REAL TIME PROCESSING EN AIRFLOW
+17. DAR DE BAJA UN MICROSERVICIO DE REAL TIME PROCESSING EN AIRFLOW
 -----------------------------------
 - Para detener el Airflow Webserver, ejecutamos en una terminal abierta desde el escritorio:
 	pkill -f "airflow webserver"
