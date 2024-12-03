@@ -1,0 +1,234 @@
+-----------------------------------
+1. LIBERAR ESPACIO
+-----------------------------------
+- Abrir una terminal desde el escritorio.
+- Para eliminar los paquetes descargados pero no instalados, ejecutar: 
+	sudo apt-get clean
+- Para eliminar los paquetes antiguos o ya no necesarios, ejecutar: 
+	sudo apt-get autoremove
+- Para eliminar caché de paquetes obsoletos, ejecutar: 
+	sudo apt-get autoclean
+- Ubuntu guarda archivos temporales en el directorio /tmp. Puedes eliminarlos con este comando: 
+	sudo rm -rf /tmp/*
+- Ubuntu genera miniaturas de las imágenes y documentos que ves en el sistema y las almacena en el directorio ~/.cache/thumbnails. Puedes liberar espacio eliminando estas miniaturas: 
+	rm -rf ~/.cache/thumbnails/*
+- Puedes liberar el área de swap si no está siendo utilizada: 
+	sudo swapoff -a && sudo swapon -a
+-----------------------------------
+2. INSTALAR MYSQL Y CONFIGURAR SUS VARIABLES DE ENTORNO EN LA MV
+-----------------------------------
+- En la terminal abierta desde el escritorio, actualizar los paquetes del sistema:
+	sudo apt update
+	sudo apt upgrade -y
+
+- En la misma terminal, instalar MySQL:
+	sudo apt install mysql-server -y
+
+- En la misma terminal, verificar que el servicio esté corriendo:
+	sudo systemctl status mysql
+
+- En caso el servicio no esté activo, ejecutar:
+	sudo systemctl start mysql
+
+- Abrir el archivo de las variables de entorno:
+	nano ~/.bashrc
+
+- Ir al final del archivo y agregar:
+	export MYSQL_ROOT_PASSWORD='root'
+	export MYSQL_DATABASE='airflow'
+	export MYSQL_USER='airflow'
+	export MYSQL_PASSWORD='airflow'
+
+- Luego: ctrl + O para guardar y ctrl + x para salir.
+
+- Recargar variables:
+	source ~/.bashrc
+-----------------------------------
+2. CREAMOS UNA BD EN MYSQL
+-----------------------------------
+- En la terminal donde se instaló y configuró MySQL, accede a la consola de MySQL ejecutando el siguiente comando:
+	mysql -u airflow -p
+	Debes ingresar la contraseña, en este caso 'root'. Luego presionar enter.
+
+- Una vez conectado, deberías ver un prompt similar a este:
+	mysql>
+
+- Crear la base de datos:
+	CREATE DATABASE clima_data;
+
+- Seleccionar la base de datos:
+	USE clima_data;
+
+- Creamos la tabla weather_data:
+	CREATE TABLE IF NOT EXISTS weather_data (
+    		timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+   		temperature FLOAT NOT NULL,
+    		humidity FLOAT NOT NULL,
+    		weather_description VARCHAR(255) NOT NULL,
+    		city VARCHAR(100) NOT NULL,
+    		country VARCHAR(100) NOT NULL,
+    		PRIMARY KEY (timestamp, city, country)
+	);
+- Salimos de la consola:
+	exit;
+-----------------------------------
+3. CREAMOS LA CARPETA PIPELINE 
+-----------------------------------
+- En el escritorio creamos el directorio Datapath, cuya ruta y composición es: 
+	/home/jolv/Escritorio/Datapath
+		/kafkakafka_2.13-3.6.0 (se creo previamente en el blog de Kafka y Spark)
+		/spark-3.4.2-bin-hadoop3 (se creo previamente en el blog de Kafka y Spark)
+		/Ejercicios_de_clase (se creo previamente en el blog de Kafka y Spark)
+		/Airflow (se creará durante la instalación de Apache Airflow)
+-----------------------------------
+3. INSTALAR Y CONFIGURAR LAS VARIABLES DE ENTORNO DE APACHE AIRFLOW
+-----------------------------------
+- En una terminal abierta desde el directorio Datapath, ejecutar los siguientes comandos:
+	sudo apt update
+	sudo apt install python3-pip
+	pip install apache-airflow
+
+- Abrir el archivo de las variables de entorno:
+	nano ~/.bashrc
+
+- Ir al final del archivo y agregar:
+	export PATH="$HOME/.local/bin:$PATH"
+	export AIRFLOW_HOME="/home/jolv/Escritorio/Datapath/Airflow"
+	export AIRFLOW__CORE__DAGS_FOLDER="/home/jolv/Escritorio/Datapath/Airflow/DAGs"
+	export AIRFLOW__CORE__BASE_LOG_FOLDER="/home/jolv/Escritorio/Datapath/Airflow/logs"
+	export AIRFLOW__CORE__SQL_ALCHEMY_CONN="sqlite:////home/jolv/Escritorio/Datapath/Airflow/airflow.db"
+	export AIRFLOW__CORE__TEMP_FOLDER="/home/jolv/Escritorio/Datapath/Airflow/tmp"
+
+
+- Luego: ctrl + O para guardar y ctrl + x para salir.
+
+- Recargar variables:
+	source ~/.bashrc
+-----------------------------------
+4. INICIAMOS LA BASE DE DATOS DE AIRFLOW
+-----------------------------------
+- Iniciamos la bd:
+	airflow db init
+
+también se puede utilizar: airflow db migrate
+para resetearla: airflow db reset
+
+- Crear usuario:
+	airflow users create \
+    	 --username admin \
+    	 --firstname Administrador \
+    	 --lastname Airflow \
+    	 --role Admin \
+    	 --email admin@example.com \
+    	 --password admin123
+
+listar usuarios: airflow users list
+eliminar usuarios: airflow users delete --username admin
+-----------------------------------
+4. MODIFICAMOS EL ARCHIVO DE CONFIGURACIÓN DE AIRFLOW
+-----------------------------------
+- En el directorio "/home/jolv/Escritorio/Datapath/Airflow", abrir el archivo airflow.cfg y realizar las siguientes modificaciones:
+	a) Para no mostrar los ejemplos, establecer load_examples = FALSE.
+	b) Para saber donde almacenar los DAG, buscar "dags_folder".
+-----------------------------------
+5. INSTALAR CONFLUENT-KAFKA EN EL DIRECTORIO DE AIRFLOW
+-----------------------------------
+- En un terminal abierto desde el directorio /Datapath/Airflow, ejecutar: 
+	pip install confluent-kafka
+-----------------------------------
+6. INICIAR EL ZOOKEEPER Y CLUSTER DE KAFKA
+-----------------------------------
+- Iniciar Zookeeper
+
+   bin/zookeeper-server-start.sh config/zookeeper.properties
+
+- Iniciar los brokers de Kafka
+
+   bin/kafka-server-start.sh config/server_1.properties
+   bin/kafka-server-start.sh config/server_2.properties
+   bin/kafka-server-start.sh config/server_3.properties
+
+- En el terminal donde instalamos Apache Kafka, listar los brokers que están escuchando a Zookeeper en el puerto 2181 a fin de comprobar que se crearon correctamente:
+
+	bin/zookeeper-shell.sh localhost:2181 ls /brokers/ids
+-----------------------------------
+7. CREAR UN TOPIC DE KAFKA AL QUE SE SUCRIBIRÁN NUESTRO CONSUMIDOR Y PRODUCTOR
+-----------------------------------
+- Creamos un nuevo topic "airflow-kafka-spark". En caso reusemos un topic existente, se debe considerar que los datos a veces se escriben erróneamente en tópicos pasados y es aconsejable crear un nuevo topic cada vez que se levanta el cluster de Kafka.
+	
+	bin/kafka-topics.sh --create --topic airflow-kafka-spark --bootstrap-server localhost:9093 -- replication-factor 1 --	partitions 3
+-----------------------------------
+8. INICIAR EL CLUSTER DE SPARK
+-----------------------------------
+- Abrimos una terminal desde la carpeta de spark-3.4.2-bin-hadoop3, y ejecutamos los siguientes comandos para iniciar un cluster de Spark con un nodo maestro y un nodo trabajador:
+	./sbin/start-master.sh
+	./sbin/start-worker.sh <master-spark-url>
+
+	Para ubicar el <master-spark-url> abrimos en el navegador el localhost:9090 y copiamos la ruta de Spark Master at 	"spark://...". En el ejercicio, fue spark://dep23jolv:7077
+-----------------------------------
+9. INICIAR EL AIRFLOW SCHEDULER Y EL AIRFLOW WEBSERVER
+-----------------------------------
+- Iniciamos el scheduler:
+	airflow scheduler
+	para detenerlo: pkill -f "airflow scheduler"
+
+- Iniciamos el servidor web:
+	airflow webserver --port 8080
+
+	para acceder a la interfaz: 0.0.0.0:8080
+	para detenerlo: pkill -f "airflow webserver"
+-----------------------------------
+10. EJECUTAMOS EL ARCHIVO app.consumer.py EN UNA TERMINAL
+-----------------------------------
+- Abrimos una terminal desde el directorio /Datapath/Ejercicios_de_clase y ejecutamos el codigo de nuestro archivo app_comsumer.py: 
+	spark-submit app_consumer.py
+-----------------------------------
+11. CONFIGURAMOS LA API DE CLIMA DESDE EL ARCHIVO dag_2.py EN VISUAL STUDIO
+-----------------------------------
+- La api es de https://openweathermap.org/api --> Current Weather Data - Api doc. En el script dag_2.py se hace el llamado a la API mediante la variable api_url:
+	https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={API key}
+- El key del api es propio de nuestra cuenta, en este caso fue:
+	https://api.openweathermap.org/data/2.5/weather?lat=-12.04&lon=-77.02&appid=0665a8eaf0ce7b6a810d6811dd520025
+Las coordenadas corresponden a la ciudad de Lima. 
+-----------------------------------
+12. EJECUTAR EL ARCHIVO init_airflow_connections.sh 
+-----------------------------------
+- Copiar el archivo init_airflow_connections.sh a la carpeta Ejercicios_de_clase del directorio Datapath.
+
+- Abrir un terminal desde la carpeta /Datapath/Ejercicios_de_clase, y ejecutar el siguiente comando para configurar la conexión de Airflow con la Base de datos clima_data:
+	sh init_airflow_connections.sh
+
+-----------------------------------
+13. MOVEMOS EL ARCHIVO dag_2.py EN LA CARPETA DAGS DE AIRFLOW Y LO EJECUTAMOS DESDE EL AIRFLOW WEBSERVER
+-----------------------------------
+- Copiar el archivo dag_2.py a la carpeta dags dentro de Airflow.
+
+- Actualizamos Airflow Webserver,  y podremos ver el dag_2 en airflow.
+
+- Hacemos clic sobre el nombre, y observamos que todos los nodos se muestren correctamente.
+
+- Dentro del DAG, hacemos clic en ejecutar (parte superior derecha).
+
+- Veremos como nuestro consumidor de Kafka empieza a mostrar los datos de clima en su terminal.
+
+- Al ingresar a nuestra consola de MySQL, seleccionamos la BD clima_data, y al ejecutar un SELECT * FROM weather_data observamos los datos añadidos por nuestro DAG.
+-----------------------------------
+13. DAR DE BAJA UN MICROSERVICIO DE REAL TIME PROCESSING EN AIRFLOW
+-----------------------------------
+- Para detener el Airflow Webserver, ejecutamos en una terminal abierta desde el escritorio:
+	pkill -f "airflow webserver"
+
+- Para detener el Airflow Scheduler, ejecutamos en una terminal abierta desde el escritorio:
+	pkill -f "airflow scheduler"
+
+- Ctrl + C en el terminal del consumidor de kafka (en este ejercicio se creo uno en terminal).
+
+- Ctrl + C en el terminal del cluster de Spark.
+
+- Bajas los brokers de kakfa
+	bin/kafka-server-stop.sh config/server_1.properties
+	bin/kafka-server-stop.sh config/server_2.properties
+	bin/kafka-server-stop.sh config/server_3.properties
+
+- Bajas el cluster de Zookeeper
+	bin/zookeeper-server-stop.sh

@@ -1,0 +1,232 @@
+-----------------------------------
+1. LIBERAR ESPACIO
+-----------------------------------
+- Abrir una terminal desde el escritorio.
+- Para eliminar los paquetes descargados pero no instalados, ejecutar: 
+	sudo apt-get clean
+- Para eliminar los paquetes antiguos o ya no necesarios, ejecutar: 
+	sudo apt-get autoremove
+- Para eliminar caché de paquetes obsoletos, ejecutar: 
+	sudo apt-get autoclean
+- Ubuntu guarda archivos temporales en el directorio /tmp. Puedes eliminarlos con este comando: 
+	sudo rm -rf /tmp/*
+- Ubuntu genera miniaturas de las imágenes y documentos que ves en el sistema y las almacena en el directorio ~/.cache/thumbnails. Puedes liberar espacio eliminando estas miniaturas: 
+	rm -rf ~/.cache/thumbnails/*
+- Puedes liberar el área de swap si no está siendo utilizada: 
+	sudo swapoff -a && sudo swapon -a
+-----------------------------------
+2. INSTALAR JAVA Y PYTHON
+-----------------------------------
+- En la misma terminal, instalar Java ejecutando secuencialmente los siguientes comandos:
+	sudo apt update
+	sudo apt install default-jre
+	java -version
+	sudo apt install default-jdk
+
+- En la misma terminal, instalar Python ejecutando secuencialmente los siguientes comandos:
+	sudo apt update
+	sudo apt install python3
+	python3 --version
+	sudo apt install python --> solo para python v2
+	python --version --> solo para python v2
+
+-----------------------------------
+3. INSTALAR CHROME
+-----------------------------------
+- En la misma terminal, instalar Chrome ejecutando secuencialmente los siguientes comandos:
+	sudo apt update
+	sudo apt install wget gnupg ca-certificates
+	wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+	echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
+	sudo apt update
+	sudo apt install google-chrome-stable
+-----------------------------------
+4. INSTALAR VISUAL ESTUDIO
+-----------------------------------
+- En la misma terminal, actualiza el sistema ejecutando secuencialmente los siguientes comandos:
+	sudo apt update
+	sudo apt upgrade
+
+- Instala dependencias necesarias, ejecutando:
+	sudo apt install curl gnupg
+
+- Importa la clave GPG de Microsoft, ejecutando:
+	wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
+	sudo mv packages.microsoft.gpg /usr/share/keyrings/
+
+- Agrega el repositorio de Visual Studio Code, ejecutando:
+	echo "deb [arch=amd64 signed-by=/usr/share/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/vscode stable main" | sudo tee 	/etc/apt/sources.list.d/vscode.list
+
+- Instala Visual Studio Code, ejecutando:
+	sudo apt update
+	sudo apt install code
+-----------------------------------
+5. CREAMOS LA CARPETA PIPELINE 
+-----------------------------------
+- En el escritorio creamos el directorio Datapath, cuya ruta y composición es: 
+	/home/jolv/Escritorio/Datapath
+		/kafkakafka_2.13-3.6.0 (se agrega al descomprimir Kafka)
+		/spark-3.4.2-bin-hadoop3 (se agrega al descomprimir Spark)
+		/Ejercicios_de_clase (se debe crear)
+-----------------------------------
+6. INSTALAR APACHE KAFKA 
+-----------------------------------
+- En la misma terminal, actualiza el sistema ejecutando secuencialmente los siguientes comandos:
+	sudo apt update
+	sudo apt upgrade
+
+- En el navegador, ir a https://kafka.apache.org/
+
+- En el sitio de kafka.apache.org, ir a "Download Kafka" y descargar una versión no tan reciente, en este ejemplo será la 3.6.0 Released Oct 10, 2023 "kafka_2.13-3.6.0.tgz". 
+	Binary downloads:
+	Scala 2.13  - kafka_2.13-3.6.0.tgz (asc, sha512)
+
+- El archivo "kafka_2.13-3.6.0.tgz" se guardará en el directorio Datapath con el nombre: kafka_2.13-3.6.0.tgz
+
+- Abrir un terminal desde la ruta donde se guardó el archivo y descomprimirlo, ejecutando:
+	tar -xzf kafka_2.13-3.6.0.tgz
+
+- En la misma terminal, acceder al archivo de las variables de entorno ejecutando:
+	nano ~/.bashrc
+
+- Ir al final del archivo y colocar la ruta de kafka/bin de nuestro ordenador: 
+	export PATH="$PATH:/home/jolv/Escritorio/Datapath/kafka_2.13-3.6.2/bin"
+	export KAFKA_HOME="/home/jolv/Escritorio/Datapath/kafka_2.13-3.6.2/"
+
+- Luego ctrl + O para guardar y ctrl + x para salir.
+
+- En la misma terminal, recargar variables ejecutando:
+	source ~/.bashrc
+-----------------------------------
+7. CONFIGURAR ZOOKEEPER Y CLUSTER DE KAFKA
+-----------------------------------
+- En la ruta donde descomprimimos Kafka, creamos los siguientes directorios para un cluster Kafka de 3 nodos:
+	"ruta de nuestro kafka"\data\kafka\broker_1
+	"ruta de nuestro kafka"\data\kafka\broker_2
+	"ruta de nuestro kafka"\data\kafka\broker_3
+	"ruta de nuestro kafka"\data\zookeeper
+
+- En la ruta "ruta de nuestro kafka"\config, copiamos el archivo server.properties tantas veces como nodos tengamos. En este caso, deberíamos tener 3 archivos server.properties
+
+- Cada uno de estos archivos será nuestro broker, les colocamos los siguientes nombres:
+	server_1.properties
+	server_2.properties
+	server_3.properties
+
+- Abrir cada archivo server.properties y modificar lo siguiente:
+	
+	a) En la línea 24, colocarle un id único a cada broker
+		broker.id=1 --> para el broker_1
+		broker.id=2 --> para el broker_2
+		broker.id=3 --> para el broker_3
+
+	b) En la línea 34, eliminar el # y colocar un puerto único para cada broker:
+		listeners=PLAINTEXT://:9091 --> para el broker_1
+		listeners=PLAINTEXT://:9092 --> para el broker_2
+		listeners=PLAINTEXT://:9093 --> para el broker_3
+
+	c) Debajo de la línea anterior, agregar en cada broker:
+		delete.topic.enable=true
+
+	d) En la línea 63 aprox., indicar para el log.dirs la rutas que creamos para cada broker:
+		log.dirs="ruta de nuestro kafka"\data\kafka\broker_1 --> para el broker_1
+		log.dirs="ruta de nuestro kafka"\data\kafka\broker_2 --> para el broker_2
+		log.dirs="ruta de nuestro kafka"\data\kafka\broker_3 --> para el broker_3
+
+- Nos dirigimos a la ruta "ruta de nuestro kafka"\config, y abrimos el archivo zookeeper.properties. En la línea 16 cambiar la ruta por la que creamos:
+	dataDir="ruta de nuestro kafka"\data\zookeeper
+
+-----------------------------------
+8. INSTALAR APACHE SPARK 
+-----------------------------------
+- En el navegador, abrir la página oficial: https://spark.apache.org/
+
+- En el sitio de Apache Spark, ir a la sección "Download Spark" y seleccionar una versión que emplee la misma versión de Scala que el Kafka (Scala 2.13).
+	Binary downloads:
+	Scala 2.13  - spark-3.4.2-bin-hadoop3.tgz
+
+- El archivo "spark-3.4.2-bin-hadoop3.tgz" se guardará en el directorio Datapath con el nombre: spark-3.4.2-bin-hadoop3.tgz
+
+- Abrir un terminal desde la ruta donde se guardó el archivo y descomprimirlo, ejecutando:
+	tar -xzf spark-3.4.1-bin-hadoop3.tgz
+
+- En la misma terminal, acceder al archivo de las variables de entorno ejecutando:
+	nano ~/.bashrc
+
+- Ir al final del archivo y colocar la ruta de spark/bin de nuestro ordenador: 
+	export PATH="$PATH:/home/jolv/Escritorio/Datapath/spark-3.4.2-bin-hadoop3/bin"
+	export SPARK_HOME="/home/jolv/Escritorio/Datapath/spark-3.4.2-bin-hadoop3/"
+
+- Luego ctrl + O para guardar y ctrl + x para salir.
+
+- En la misma terminal, recargar variables ejecutando:
+	source ~/.bashrc
+
+- En la misma terminal, comprobamos que la ruta de Spark se añadió correctamente:
+	echo $SPARK_HOME
+
+- En la misma terminal, comprobamos que las API de Spark funcionen adecuadamente accediendo a las consolas interactivas:
+	spark-shell --> Scala o Spark SQL
+	pyspark --> Python
+ 	Para salir de cada consola, presionar Ctrl + C
+-----------------------------------
+9. CONFIGURAR UN CLUSTER DE SPARK
+-----------------------------------
+- En la ruta spark-3.4.2-bin-hadoop3/conf cambiamos el nombre del archivo spark-defaults.conf.template por spark-defaults.conf
+
+- Abrimos el archivo spark-defaults.conf y colocamos:
+	spark.master.port 7077
+	spark.master.ui.port 9090
+
+- Abrimos una terminal desde la carpeta de spark-3.4.2-bin-hadoop3, y ejecutamos los siguientes comandos para iniciar un cluster de Spark con un nodo maestro y un nodo trabajador:
+	./sbin/start-master.sh
+	./sbin/start-worker.sh <master-spark-url>
+
+	Para ubicar el <master-spark-url> abrimos en el navegador el localhost:9090 y copiamos la ruta de Spark Master at 	"spark://...". En el ejercicio, fue spark://dep23jolv:7077
+
+- Cuando refrescamos el link del master "spark://dep23jolv:7077", debe aparecer el nodo trabajador.
+
+-----------------------------------
+10. IMPLEMENTAR UN MICROSERVICIO DE REAL TIME PROCESSING
+-----------------------------------
+- Iniciar Zookeeper
+
+   bin/zookeeper-server-start.sh config/zookeeper.properties
+
+- Iniciar los brokers de Kafka
+
+   bin/kafka-server-start.sh config/server_1.properties
+   bin/kafka-server-start.sh config/server_2.properties
+   bin/kafka-server-start.sh config/server_3.properties
+
+- En el terminal donde instalamos Apache Kafka, listar los brokers que están escuchando a Zookeeper en el puerto 2181 a fin de comprobar que se crearon correctamente:
+
+	bin/zookeeper-shell.sh localhost:2181 ls /brokers/ids
+
+- Creamos un nuevo topic "kafkaSpark". En caso reusemos un topic existente, se debe considerar que los datos a veces se escriben erróneamente en tópicos pasados y es aconsejable crear un nuevo topic cada vez que se levanta el cluster de Kafka.
+	
+	bin/kafka-topics.sh --create --topic kafkaSpark --bootstrap-server localhost:9093 -- replication-factor 1 --partitions 3
+
+- Creamos un nuevo productor que escribe sus datos en el topic "kafkaSpark"
+
+	bin/kafka-console-producer.sh --broker-list localhost:9091 --topic kafkaSpark
+
+- Creamos la conexión de Spark y Kafka mediante la librería intermedia spark-sql. Cabe precisar que nuestra aplicación spark será nuestro consumidor y debe contener los nombres de tópicos y puerto de un broker existentes en el cluster Kafka. El puerto de la aplicación Spark (consumidor) y el productor creado en el paso anterior puede ser diferente gracias a que la información se replica en todos los brokers de Kafka. Lo importante es que coincidan en el nombre del tópico. Ejecutar el directorio donde se encuentra la aplicación Spark "Ejercicios_de_clase", el siguiente comando:
+
+spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.13:3.4.3 KafkaWithSpark_Ejemplo_4.py
+-----------------------------------
+10. DAR DE BAJA UN MICROSERVICIO DE REAL TIME PROCESSING
+-----------------------------------
+- Ctrl + C en el terminal del consumidor de kafka (en este ejercicio se creo uno en terminal, ejecutando la aplicación Spark).
+
+- Ctrl + C en el terminal del productor de kafka (en este ejercicio se creo uno en terminal).
+
+- Ctrl + C en el terminal del cluster de Spark.
+
+- Bajas los brokers de kakfa
+	bin/kafka-server-stop.sh config/server_1.properties
+	bin/kafka-server-stop.sh config/server_2.properties
+	bin/kafka-server-stop.sh config/server_3.properties
+
+- Bajas el cluster de Zookeeper
+	bin/zookeeper-server-stop.sh
